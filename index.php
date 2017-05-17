@@ -12,39 +12,39 @@
 
 var Shapes=new Array(
 new Array(
+0,0,0,0,
 1,1,1,1,
 0,0,0,0,
-0,0,0,0,
 0,0,0,0
 ),new Array(
+0,0,0,0,
 1,0,0,0,
 1,1,1,0,
-0,0,0,0,
 0,0,0,0
 ),new Array(
+0,0,0,0,
 0,0,0,1,
 0,1,1,1,
-0,0,0,0,
 0,0,0,0
 ),new Array(
-0,1,1,0,
-0,1,1,0,
 0,0,0,0,
+0,1,1,0,
+0,1,1,0,
 0,0,0,0
 ),new Array(
+0,0,0,0,
 0,0,1,1,
 0,1,1,0,
-0,0,0,0,
 0,0,0,0
 ),new Array(
+0,0,0,0,
 0,0,1,0,
 0,1,1,1,
-0,0,0,0,
 0,0,0,0
 ),new Array(
+0,0,0,0,
 1,1,0,0,
 0,1,1,0,
-0,0,0,0,
 0,0,0,0
 )
 );
@@ -186,7 +186,6 @@ new Array(-3,0)//16
 
 //~ 0,0,1,1,
 //~ 0,1,1,0
-
 var TetrisBoardType="Graphical";
 var Board=new Array(
 new Array(0,0,0,0,0,0,0,0,0,0),
@@ -263,6 +262,9 @@ function Update(){
 if(!GameOver){
 //alert("here");
 if(!pieceInPlay && !buildingPiece){
+if(checkFilledRow()){
+console.log("Filled Row");
+}
 putPieceInPlay();
 }
 
@@ -296,6 +298,35 @@ IntervalController=setTimeout(Update, curinterval);
 
 
 
+
+function HandleFilledRows(tmpbrd,startrow,hasfilledRow){
+
+for(x=startrow;x<tmpbrd.length;x++){
+var filledSearch=tmpbrd[x].indexOf(0);
+	if(filledSearch<0){
+	hasfilledRow=true;
+	tmpbrd.splice(x, 1);
+	tmpbrd.splice(0, 0, new Array(0,0,0,0,0,0,0,0,0,0));
+	return HandleFilledRows(tmpbrd,x+1,hasfilledRow);
+	}
+}
+return new Array(hasfilledRow,tmpbrd);
+}
+
+
+
+function checkFilledRow(){
+var hasfilledRow=false;
+var tmpbrd=JSON.parse(JSON.stringify(Board));
+
+//~ for(x=(Board.length-1);x>=0;x--){
+var tmpbrdaltered=HandleFilledRows(tmpbrd,0,false);
+hasfilledRow=tmpbrdaltered[0];
+tmpbrd=tmpbrdaltered[1];
+//~ }
+Board=JSON.parse(JSON.stringify(tmpbrd));
+return hasfilledRow;
+}
 
 
 
