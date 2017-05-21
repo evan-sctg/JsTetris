@@ -110,7 +110,7 @@ new Array(
 var RotationAlterations= new Array(-12,-7,-2,3,-9,-4,1,6,-6,-1,4,9,-3,2,7,12);
 var RotationVectors= new Array();
 
-
+//alterations to apply to piece in play to get the rotation you want
 RotationVectors[90]= new Array(
 new Array(0,-3),//16
 new Array(-1,-2),
@@ -194,6 +194,7 @@ new Array(-3,0)//16
 //~ 0,0,1,1,
 //~ 0,1,1,0
 var TetrisBoardType="Graphical";
+//our representation of the game
 var Board=new Array(
 new Array(0,0,0,0,0,0,0,0,0,0),
 new Array(0,0,0,0,0,0,0,0,0,0),
@@ -217,22 +218,22 @@ new Array(0,0,0,0,0,0,0,0,0,0),
 new Array(0,0,0,0,0,0,0,0,0,0)
 );
 
-//~ var NextPeice=Shapes[Math.floor(Math.random() * ( Shapes.length+1 ))];
+//~ var Nextpiece=Shapes[Math.floor(Math.random() * ( Shapes.length+1 ))];
 
 document.onkeydown = KeyPressHandler;
 //~ document.onkeyup = KeyPressHandler;
-var curinterval=1000;
-var mininterval=150;
-var curintervalStep=1;
-var IntervalController=setTimeout(Update, curinterval);
-var GameOver=false;
-var GOAlready=false;
-var inRotate=false;
-var buildingPiece=false;
-var pieceInPlay=false;
-var pieceInPlayPOS=new Array();
-var pieceInPlayROT=0;
-//~ var shapeInPlay=new Array();
+//settings
+var curinterval=1000;//interval between steps
+var mininterval=150;//the shortest teh interval between steps can be
+var curintervalStep=1;//how fast the steps speed up
+var IntervalController=setTimeout(Update, curinterval);//controls teh timing of our updates
+var GameOver=false;//have we lost yet
+var GOAlready=false;//already asked if you want to retry
+var inRotate=false;//currently applying rotation alterations to piece in play
+var buildingPiece=false;//making a new piece to put in play
+var pieceInPlay=false;//is tehre still a piece under our controll
+var pieceInPlayPOS=new Array();//positioning details of the current piece we are controlling
+var pieceInPlayROT=0;//rotation details of the current piece we are controlling
 
 
 
@@ -263,43 +264,39 @@ function KeyPressHandler(data) {
 
 
 
-//~ Update();
 function Update(){
 
 if(!GameOver){
-//alert("here");
 if(!pieceInPlay && !buildingPiece){
-if(checkFilledRow()){
+if(checkFilledRow()){//if you filled a entire row delete that row and let everythign else move down
 console.log("Filled Row");
 }
-putPieceInPlay();
+putPieceInPlay();//put the next piece  in play and activate control
 }
 
 if(pieceInPlay && pieceInPlayPOS.length>0){
-movePieceDown();
-//~ for (var i = 0; i < pieceInPlayPOS.length; i++) {
-    //~ console.log(pieceInPlayPOS[i]);
-//~ }
+movePieceDown();//each step move piece down ... like gravity
 }
 
 
 }else{
 
-
+//check if user wants to retry
 if(!GOAlready && confirm("Game Over, Try Again?")){
-window.location.reload();
+window.location.reload();//reload page
 }else{
-GOAlready=true;
+GOAlready=true;//dont restart
 }
 
 }
 
-displayTetrisBoard();
+displayTetrisBoard();//build the visual representation of the game
 
+//if we havent reached our max speed them ramp up the speed by our interval
 if(curinterval>mininterval){
 curinterval=curinterval-curintervalStep;
 }
-IntervalController=setTimeout(Update, curinterval);
+IntervalController=setTimeout(Update, curinterval);//set the update interval to the new timing
 	
 }
 
@@ -308,15 +305,15 @@ IntervalController=setTimeout(Update, curinterval);
 
 function HandleFilledRows(tmpbrd,startrow,hasfilledRow){
 
-for(x=startrow;x<tmpbrd.length;x++){
-var filledSearch=tmpbrd[x].indexOf(0);
-	if(filledSearch<0){
-	hasfilledRow=true;
-	tmpbrd.splice(x, 1);
-	tmpbrd.splice(0, 0, new Array(0,0,0,0,0,0,0,0,0,0));
-	return HandleFilledRows(tmpbrd,x+1,hasfilledRow);
+	for(x=startrow;x<tmpbrd.length;x++){
+	var filledSearch=tmpbrd[x].indexOf(0);
+		if(filledSearch<0){
+		hasfilledRow=true;
+		tmpbrd.splice(x, 1);
+		tmpbrd.splice(0, 0, new Array(0,0,0,0,0,0,0,0,0,0));
+		return HandleFilledRows(tmpbrd,x+1,hasfilledRow);
+		}
 	}
-}
 return new Array(hasfilledRow,tmpbrd);
 }
 
@@ -326,18 +323,18 @@ function checkFilledRow(){
 var hasfilledRow=false;
 var tmpbrd=JSON.parse(JSON.stringify(Board));
 
-//~ for(x=(Board.length-1);x>=0;x--){
+//build new board minus our filled rows if any
 var tmpbrdaltered=HandleFilledRows(tmpbrd,0,false);
 hasfilledRow=tmpbrdaltered[0];
 tmpbrd=tmpbrdaltered[1];
-//~ }
-Board=JSON.parse(JSON.stringify(tmpbrd));
+
+Board=JSON.parse(JSON.stringify(tmpbrd));//apply new board
 return hasfilledRow;
 }
 
 
 
-
+//verify that if we move the piece right it doesnt run into any other blocks or go off of our board
 function checkMovePieceRight(){
 
 var clearForMove=true;
@@ -346,46 +343,37 @@ var clearForMove=true;
 if(pieceInPlay){
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(tmpchkboard.length>row && row >= 0){
-if(tmpchkboard[0].length>col && col >= 0){
-if(val){
-tmpchkboard[row][col]=0;
-}
-}
-}
-}
-}
+//itterate through shape information and remove piece from a temp game board for checking
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(tmpchkboard.length>row && row >= 0){
+		if(tmpchkboard[0].length>col && col >= 0){
+		if(val){
+		tmpchkboard[row][col]=0;
+		}
+		}
+		}
+	}
+	}
 
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	var nextColVal=((x+1<pieceInPlayPOS.length && parseInt(x+1%4)>0)? pieceInPlayPOS[x+1][2]: 0);
 
-
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-//~ parseInt(x/4)
-//~ var prevRowVal=((x>3)? pieceInPlayPOS[x-4][2]: 0);
-//~ var nextColVal=((x+1<pieceInPlayPOS.length && parseInt(x/4)>0)? pieceInPlayPOS[x+1][2]: 0);
-var nextColVal=((x+1<pieceInPlayPOS.length && parseInt(x+1%4)>0)? pieceInPlayPOS[x+1][2]: 0);
-
-
-if(val){
-//~ if((col+1)>=Board[0].length || (tmpchkboard[row][(col+1)]==1 && nextColVal==0)){
-if((col+1)>=Board[0].length || (tmpchkboard[row][(col+1)]==1)){
-//~ if((col+1)>=Board[0].length || (Board[row][(col+1)]==1 && nextColVal==0)){
-console.log('False['+tmpchkboard[row][(col+1)]+']['+nextColVal+']'+(row)+", "+(col+1));
-clearForMove=false;
-}
-}
-}
-}
+		if(val){
+		if((col+1)>=Board[0].length || (tmpchkboard[row][(col+1)]==1)){
+		console.log('False['+tmpchkboard[row][(col+1)]+']['+nextColVal+']'+(row)+", "+(col+1));
+		clearForMove=false;
+		}
+		}
+	}
+	}
 }else{
 console.log('False'+(row)+", "+(col+1));
 clearForMove=false;
@@ -394,98 +382,76 @@ return clearForMove;
 }
 
 
-
+//apply position change to the piece in play
 function movePieceRight(){
 var okToMove=checkMovePieceRight();
- //~ console.log(okToMove);
 if(okToMove){
-
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(Board.length>row && row >= 0){
-if(Board[0].length>col && col >= 0){
-if(val){
-Board[row][col]=0;
-}
-}
-}
-}
-}
-
-for(x=0;x<pieceInPlayPOS.length;x++){
-//~ for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(val){
-Board[row][(col+1)]=1;
-//~ Board[row][col]=((x-1>=0 && parseInt(x/4)>0)? pieceInPlayPOS[x+1][2]: 0);
-//Board[row][col]=((x>0 && parseInt(x/4)<4)? pieceInPlayPOS[x-1][2]: 0);
-//~ Board[row][col]=((x>3)? pieceInPlayPOS[x-4][2]: 0);
-
-}
-pieceInPlayPOS[x][0]=row;
-pieceInPlayPOS[x][1]=col+1;
-//~ Board[row][col]=0;
-
-
-
-
-}
+//itterate through shape information and remove piece from game board
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(Board.length>row && row >= 0){
+			if(Board[0].length>col && col >= 0){
+				if(val){
+				Board[row][col]=0;
+				}
+			}
+		}
+	}
+	}
+ //set new position information for the pice in play we moved
+	for(x=0;x<pieceInPlayPOS.length;x++){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	if(val){
+	Board[row][(col+1)]=1;
+	}
+	pieceInPlayPOS[x][0]=row;
+	pieceInPlayPOS[x][1]=col+1;
+	}
 }
 displayTetrisBoard();
 }
 
-
+//verify that if we move the piece left it doesnt run into any other blocks or go off of our board
 function checkMovePieceLeft(){
 
 var clearForMove=true;
 
 if(pieceInPlay){
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
+//itterate through shape information and remove piece from a temp game board for checking
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(tmpchkboard.length>row && row >= 0){
+		if(tmpchkboard[0].length>col && col >= 0){
+		if(val){
+		tmpchkboard[row][col]=0;
+		}
+		}
+		}
+	}
+	}
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(tmpchkboard.length>row && row >= 0){
-if(tmpchkboard[0].length>col && col >= 0){
-if(val){
-tmpchkboard[row][col]=0;
-}
-}
-}
-}
-}
-
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ for(x=0;x<pieceInPlayPOS.length;x++){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-//~ parseInt(x/4)
-//~ var prevRowVal=((x>3)? pieceInPlayPOS[x-4][2]: 0);
-var prevColVal=((x>0 && parseInt(x/4)<4)? pieceInPlayPOS[x-1][2]: 0);
-
-
-if(val){
-if((col)<1 || (tmpchkboard[row][(col-1)]==1 && prevColVal==0)){
-//~ if((row+1)>=Board.length || (Board[(row+1)][col]==1) ){
-console.log('False'+(row)+", "+(col-1));
-clearForMove=false;
-}
-}
-}
-}
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	var prevColVal=((x>0 && parseInt(x/4)<4)? pieceInPlayPOS[x-1][2]: 0);
+		if(val){
+		if((col)<1 || (tmpchkboard[row][(col-1)]==1 && prevColVal==0)){
+		clearForMove=false;
+		}
+		}
+	}
+	}
 }else{
 console.log('False'+(row)+", "+(col+1));
 clearForMove=false;
@@ -497,47 +463,34 @@ return clearForMove;
 
 function movePieceLeft(){
 var okToMove=checkMovePieceLeft();
- //~ console.log(okToMove);
 if(okToMove){
+//itterate through shape information and remove piece from game board
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(Board.length>row && row >= 0){
+		if(Board[0].length>col && col >= 0){
+		if(val){
+		Board[row][col]=0;
+		}
+		}
+		}
+	}
+	}
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(Board.length>row && row >= 0){
-if(Board[0].length>col && col >= 0){
-if(val){
-Board[row][col]=0;
-}
-}
-}
-}
-}
-
-
-for(x=0;x<pieceInPlayPOS.length;x++){
-//~ for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(val){
-Board[row][(col-1)]=1;
-//~ Board[row][col]=((x-1>=0 && parseInt(x/4)>0)? pieceInPlayPOS[x+1][2]: 0);
-//Board[row][col]=((x+1<pieceInPlayPOS.length && parseInt(x/4)>0)? pieceInPlayPOS[x+1][2]: 0);
-//~ Board[row][col]=((x>3)? pieceInPlayPOS[x-4][2]: 0);
-
-}
-pieceInPlayPOS[x][0]=row;
-pieceInPlayPOS[x][1]=col-1;
-//~ Board[row][col]=0;
-
-
-
-
-}
+//set new position information for the piece in play we moved
+	for(x=0;x<pieceInPlayPOS.length;x++){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	if(val){
+	Board[row][(col-1)]=1;
+	}
+	pieceInPlayPOS[x][0]=row;
+	pieceInPlayPOS[x][1]=col-1;
+	}
 }
 displayTetrisBoard();
 }
@@ -545,7 +498,7 @@ displayTetrisBoard();
 
 
 
-
+//verify that if we move the piece down it doesnt run into any other blocks or go off of our board
 function checkMovePieceDown(){
 
 var clearForMove=true;
@@ -553,45 +506,38 @@ var clearForMove=true;
 if(pieceInPlay){
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(tmpchkboard.length>row && row >= 0){
-if(tmpchkboard[0].length>col && col >= 0){
-if(val){
-tmpchkboard[row][col]=0;
-}
-}
-}
-}
-}
+//itterate through shape information and remove piece from a temp game board for checking
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(tmpchkboard.length>row && row >= 0){
+		if(tmpchkboard[0].length>col && col >= 0){
+		if(val){
+		tmpchkboard[row][col]=0;
+		}
+		}
+		}
+	}
+	}
 
 
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-//~ parseInt(x/4)
-//~ var prevRowVal=((x>3)? pieceInPlayPOS[x-4][2]: 0);
-var nextRowVal=((x<((pieceInPlayPOS.length)-4))? pieceInPlayPOS[x+4][2]: 0);
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	var nextRowVal=((x<((pieceInPlayPOS.length)-4))? pieceInPlayPOS[x+4][2]: 0);
 
-
-if(val){
-if((row+1)>=Board.length || (tmpchkboard[(row+1)][col]==1) ){
-//~ if((row+1)>=Board.length || (Board[(row+1)][col]==1 && nextRowVal==0) ){
-//~ if((row+1)>=Board.length || (Board[(row+1)][col]==1) ){
-console.log('mvd False'+(row+1)+", "+col);
-clearForMove=false;
-}
-}
-}
-}
+		if(val){
+		if((row+1)>=Board.length || (tmpchkboard[(row+1)][col]==1) ){
+		clearForMove=false;
+		}
+		}
+	}
+	}
 }else{
 console.log('False'+(row)+", "+(col+1));
 clearForMove=false;
@@ -604,109 +550,103 @@ return clearForMove;
 
 function movePieceDown(){
 var okToMove=checkMovePieceDown();
- //~ console.log(okToMove);
 if(okToMove){
+//itterate through shape information and remove piece from game board
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(Board.length>row && row >= 0){
+		if(Board[0].length>col && col >= 0){
+		if(val){
+		Board[row][col]=0;
+		}
+		}
+		}
+	}
+	}
 
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(Board.length>row && row >= 0){
-if(Board[0].length>col && col >= 0){
-if(val){
-Board[row][col]=0;
-}
-}
-}
-}
-}
-
-
-for(x=0;x<pieceInPlayPOS.length;x++){
-//~ for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-
-var val= pieceInPlayPOS[x][2];
-if(val){
-
-Board[(row+1)][col]=1;
-//Board[row][col]=((x>3)? pieceInPlayPOS[x-4][2]: 0); //can leave stray blocks // meant to clean up any blocks being moved
-
-}
-pieceInPlayPOS[x][0]=(row+1);
-pieceInPlayPOS[x][1]=col;
-pieceInPlayPOS[x][2]=val;
-//~ Board[row][col]=0;
+ //set new position information for the piece in play we moved
+	for(x=0;x<pieceInPlayPOS.length;x++){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	if(val){
+	Board[(row+1)][col]=1;
+	}
+	pieceInPlayPOS[x][0]=(row+1);
+	pieceInPlayPOS[x][1]=col;
+	pieceInPlayPOS[x][2]=val;
+	//~ Board[row][col]=0;
 
 
 
 
-}
+	}
 }else{
 pieceInPlay=false;
 }
 displayTetrisBoard();
 }
 
+//build a new piece and apply control
 function putPieceInPlay(){
 buildingPiece=true;
 pieceInPlayPOS=new Array();
 pieceInPlayROT=0
-var NextPeice=getNextPiece();
-//~ shapeInPlay=NextPeice;
+var Nextpiece=getNextPiece();
 var row=0;
-for(x=0;x<NextPeice.length;x++){
-if(x+1>4){row=parseInt(x/4);}
-var col=((x+1>3)? (x%4)+3:x+3);
-if(NextPeice[x]==1){
-//~ alert(Math.floor(Math.random() * ( Shapes.length+1 )));
-if(Board[row][col]==0){
-Board[row][col]=1;
-}else{
-GameOver=true;
-}
-}
-pieceInPlayPOS[pieceInPlayPOS.length]=new Array(row,col,NextPeice[x]);
-}
+//itterate through shape information and build piece on game board
+	for(x=0;x<Nextpiece.length;x++){
+	if(x+1>4){row=parseInt(x/4);}
+	var col=((x+1>3)? (x%4)+3:x+3);
+		if(Nextpiece[x]==1){
+		if(Board[row][col]==0){
+		Board[row][col]=1;
+		}else{
+		GameOver=true;
+		}
+		}
+	pieceInPlayPOS[pieceInPlayPOS.length]=new Array(row,col,Nextpiece[x]);
+	}
 pieceInPlay=true;
 buildingPiece=false;
 }
 
 
-function alterPieceInPlay(NextPeice){
+
+//not used ... yet ... the idea is to replace a shape in place with different shape
+function alterPieceInPlay(Nextpiece){
 
 var xi=0;
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-tmpchkboard[row][col]=0;
-}
-}
+
+//itterate through shape information and remove piece from a temp game board for checking
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	tmpchkboard[row][col]=0;
+	}
+	}
 var Initrow=pieceInPlayPOS[x][0];
 var Initcol= pieceInPlayPOS[x][1];
 
 pieceInPlayPOS=new Array();
-//~ shapeInPlay=NextPeice;
 var row=0;
-for(x=0;x<NextPeice.length;x++){
-if(x+1>4){row=parseInt(x/4);}
-if(NextPeice[x]==1){
-//~ alert(Math.floor(Math.random() * ( Shapes.length+1 )));
-var col=((x+1>3)? (x%4)+3:x+3);
-if(tmpchkboard[Initrow+row][Initcol+col]==0){
-tmpchkboard[Initrow+row][Initcol+col]=1;
-}
-}
-pieceInPlayPOS[pieceInPlayPOS.length]=new Array(Initrow+row,Initcol+col,NextPeice[x]);
-}
+//itterate through shape information and build piece on a temp game board
+	for(x=0;x<Nextpiece.length;x++){
+	if(x+1>4){row=parseInt(x/4);}
+	if(Nextpiece[x]==1){
+	var col=((x+1>3)? (x%4)+3:x+3);
+	if(tmpchkboard[Initrow+row][Initcol+col]==0){
+	tmpchkboard[Initrow+row][Initcol+col]=1;
+	}
+	}
+	pieceInPlayPOS[pieceInPlayPOS.length]=new Array(Initrow+row,Initcol+col,Nextpiece[x]);
+	}
 Board=JSON.parse(JSON.stringify(tmpchkboard));
 pieceInPlay=true;
 }
@@ -714,15 +654,18 @@ pieceInPlay=true;
 
 
 
-
+//change the speed in which teh game steps increase in frequency
 function changeBoardDifficulty(newDifficulty){
 curintervalStep=newDifficulty;
 }
+
+//change visual representation of game board
 function changeBoardType(boardType){
 TetrisBoardType=boardType;
 }
 
 
+//controll the different types of displaying the game board
 function displayTetrisBoard(){
 var TetrisBoardHtml="";
 if(TetrisBoardType=="Binary"){
@@ -740,84 +683,81 @@ document.getElementById("TetrisBoard").innerHTML = TetrisBoardHtml;
 }
 
 
+//build csv game view
 function displayTetrisBoardCSV(){
 var TetrisBoardHtml="";
 
-for(x=0;x<Board.length;x++){
-for(y=0;y<Board[x].length;y++){
+	for(x=0;x<Board.length;x++){
+	for(y=0;y<Board[x].length;y++){
 
-if(y==(Board[x].length-1)){
-TetrisBoardHtml+=Board[x][y]+"<br />";
+	if(y==(Board[x].length-1)){
+	TetrisBoardHtml+=Board[x][y]+"<br />";
+	}else{
+	TetrisBoardHtml+=Board[x][y]+",";
+	}
 
-}else{
-TetrisBoardHtml+=Board[x][y]+",";
-}
-
-}
-}
+	}
+	}
 
 return TetrisBoardHtml;
 }
 
 
+//build binary game view
 function displayTetrisBoardBinary(){
 var TetrisBoardHtml="<table>";
 
-for(x=0;x<Board.length;x++){
-for(y=0;y<Board[x].length;y++){
+	for(x=0;x<Board.length;x++){
+	for(y=0;y<Board[x].length;y++){
 
-if(y==(Board[x].length-1)){
-TetrisBoardHtml+="<td>"+Board[x][y]+"</td></tr>";
+	if(y==(Board[x].length-1)){
+	TetrisBoardHtml+="<td>"+Board[x][y]+"</td></tr>";
+	}else{
+	TetrisBoardHtml+=((y==0)? "<tr>":"")+"<td>"+Board[x][y]+"</td>";
+	}
 
-}else{
-
-TetrisBoardHtml+=((y==0)? "<tr>":"")+"<td>"+Board[x][y]+"</td>";
-}
-
-}
-}
+	}
+	}
 TetrisBoardHtml+="</table>";
 return TetrisBoardHtml;
 }
 
+
+//build html table game view
 function displayTetrisBoardGraphical(){
 var TetrisBoardHtml='<table border="1" style="border: solid 2px #000000;">';
-aStyle=' style="'+"width: 30px;height: 30px;background-color: rgb(13, 121, 172);"+'"';
-naStyle=' style="'+"width: 30px;height: 30px;background-color: rgb(255, 255 255);"+'"';
+aStyle=' style="'+"width: 30px;height: 30px;background-color: rgb(13, 121, 172);"+'"';//active style // when block is filled
+naStyle=' style="'+"width: 30px;height: 30px;background-color: rgb(255, 255 255);"+'"';//not active style // when block is empty
 
-for(x=0;x<Board.length;x++){
-for(y=0;y<Board[x].length;y++){
+	for(x=0;x<Board.length;x++){
+	for(y=0;y<Board[x].length;y++){
 
-if(y==(Board[x].length-1)){
-TetrisBoardHtml+="<td"+((Board[x][y])? aStyle:naStyle)+"></td></tr>";
+	if(y==(Board[x].length-1)){
+	TetrisBoardHtml+="<td"+((Board[x][y])? aStyle:naStyle)+"></td></tr>";
+	}else{
+	TetrisBoardHtml+=((y==0)? "<tr>":"")+"<td"+((Board[x][y])? aStyle:naStyle)+"></td>";
+	}
 
-}else{
-
-TetrisBoardHtml+=((y==0)? "<tr>":"")+"<td"+((Board[x][y])? aStyle:naStyle)+"></td>";
-}
-
-}
-}
+	}
+	}
 TetrisBoardHtml+="</table>";
 return TetrisBoardHtml;
 }
 
 
+//select the next game riece at random from a list of our available shapes
 function getNextPiece(){
 var tmp = Math.floor(Math.random() * ( Shapes.length-0.1 ));
 console.log('shape: '+tmp);
-//~ alert(tmp);
 	return Shapes[tmp];
-	//~ return Shapes[Math.floor(Math.random() * ( Shapes.length+1 ))];
-	//~ return NextPeice=Shapes[Math.floor(Math.random() * ( Shapes.length+1 ))];
 	}
 	
 	
 	
 	
 
+//verify that if we rotate the piece it doesnt run into any other blocks or go off of our board
 function checkRotatePiece(){
-//RotationAlterations
 var clearForMove=true;
 
 if(pieceInPlay){
@@ -825,7 +765,6 @@ var tmppieceRot=pieceInPlayROT;
 
 if(pieceInPlayROT==0){
 // rot to 90
-//~ pieceInPlayPOS
 tmppieceRot=90;
 }else if(pieceInPlayROT==90){
 // rot to 180
@@ -841,65 +780,52 @@ tmppieceRot=0;
 var shaperows=4;
 var xi=0;
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(tmpchkboard.length>row && row >= 0){
-if(tmpchkboard[0].length>col && col >= 0){
-if(val){
-tmpchkboard[row][col]=0;
-}
-}
-}
-}
-}
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
+//itterate through shape information and remove piece from a temp game board for checking
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+	if(tmpchkboard.length>row && row >= 0){
+	if(tmpchkboard[0].length>col && col >= 0){
+	if(val){
+	tmpchkboard[row][col]=0;
+	}
+	}
+	}
+	}
+	}
+	
+//itterate through shape information and build piece on a temp game board for checking
+//apply rotationVectors //effectivly rotating the piece as a whole
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
 
-//~ var curalt=RotationAlterations[xi];
-//~ if(RotationAlterations[xi]<0){curalt=curalt*-1;}
-//~ rowalteration=Math.floor((curalt)/shaperows);
-//~ colalteration=(((curalt)%shaperows));
+	rowalteration=RotationVectors[tmppieceRot][xi][0];
+	colalteration=RotationVectors[tmppieceRot][xi][1];
+		if(val){
+		if(tmpchkboard.length>row+rowalteration && row+rowalteration >= 0){
+		if(tmpchkboard[0].length>col+colalteration && col+colalteration >= 0){
+		if(tmpchkboard[(row+rowalteration)][(col+colalteration)]==1){
+		//~ console.log('cant rotate'+(row)+", "+(col+1));
+		clearForMove=false;
+		}
+		}else{
+		//~ console.log('cant rotate'+(row)+", "+(col+1));
+		clearForMove=false;
+		}
+		}else{
+		//~ console.log('cant rotate'+(row)+", "+(col+1));
+		clearForMove=false;
+		}
 
-
-rowalteration=RotationVectors[tmppieceRot][xi][0];
-colalteration=RotationVectors[tmppieceRot][xi][1];
-
-
-//~ if(RotationAlterations[xi]<0){
-//~ rowalteration=rowalteration*-1;
-//~ colalteration=colalteration*-1;
-//~ }
-if(val){
-if(tmpchkboard.length>row+rowalteration && row+rowalteration >= 0){
-if(tmpchkboard[0].length>col+colalteration && col+colalteration >= 0){
-if(tmpchkboard[(row+rowalteration)][(col+colalteration)]==1){
-console.log('cant rotate'+(row)+", "+(col+1));
-console.log('False'+(row)+", "+(col+1));
-clearForMove=false;
-}
-}else{
-console.log('cant rotate'+(row)+", "+(col+1));
-console.log('False'+(row)+", "+(col+1));
-clearForMove=false;
-}
-}else{
-console.log('cant rotate'+(row)+", "+(col+1));
-console.log('False'+(row)+", "+(col+1));
-clearForMove=false;
-}
-
-}
-}
-xi++;
-}
+		}
+	}
+	xi++;
+	}
 }else{
 console.log('False'+(row)+", "+(col+1));
 clearForMove=false;
@@ -914,15 +840,12 @@ function RotatePiece(){
 if(!inRotate){
 
 var okToMove=checkRotatePiece();
-//~ var okToMove=true;
- console.log("ok to rotate :"+okToMove);
 if(okToMove){
 inRotate=true;
 var lastRotLevel=0;
 var newRotLevel=0;
 if(pieceInPlayROT==0){
 // rot to 90
-//~ pieceInPlayPOS
 pieceInPlayROT=90;
 newRotLevel=1;
 }else if(pieceInPlayROT==90){
@@ -944,91 +867,55 @@ newRotLevel=4
 
 var tmpchkpieceInPlayPOS=JSON.parse(JSON.stringify(pieceInPlayPOS));
 
-
-
-
 var shaperows=4;
 var xi=0;
 var tmpchkboard=JSON.parse(JSON.stringify(Board));
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ //console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
-if(tmpchkboard.length>row && row >= 0){
-if(tmpchkboard[0].length>col && col >= 0){
-if(val){
-Board[row][col]=0;
-}
-}
-}
-}
-}
-for(x=(pieceInPlayPOS.length-1);x>=0;x--){
-//~ console.log(x);
-if(pieceInPlayPOS[x].length==3){
-var row=pieceInPlayPOS[x][0];
-var col= pieceInPlayPOS[x][1];
-var val= pieceInPlayPOS[x][2];
+//itterate through shape information and remove piece from game board
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
+		if(tmpchkboard.length>row && row >= 0){
+		if(tmpchkboard[0].length>col && col >= 0){
+		if(val){
+		Board[row][col]=0;
+		}
+		}
+		}
+	}
+	}
+	
+	//set new rotation information for the piece in play we moved
+	//apply rotationVectors //effectivly rotating the piece as a whole
+	for(x=(pieceInPlayPOS.length-1);x>=0;x--){
+	if(pieceInPlayPOS[x].length==3){
+	var row=pieceInPlayPOS[x][0];
+	var col= pieceInPlayPOS[x][1];
+	var val= pieceInPlayPOS[x][2];
 
-//~ var curalt=RotationAlterations[xi];
-//~ if(RotationAlterations[xi]<0){curalt=curalt*-1;}
-//~ rowalteration=Math.floor((curalt)/shaperows);
-//~ colalteration=(((curalt)%shaperows));
-//~ pieceInPlayROT=90;
+	rowalteration=RotationVectors[pieceInPlayROT][xi][0];
+	colalteration=RotationVectors[pieceInPlayROT][xi][1];
 
-rowalteration=RotationVectors[pieceInPlayROT][xi][0];
-colalteration=RotationVectors[pieceInPlayROT][xi][1];
+	if(tmpchkboard.length>row+rowalteration && row+rowalteration >= 0){
+	if(tmpchkboard[0].length>col+colalteration && col+colalteration >= 0){
 
-//~ if(RotationAlterations[xi]<0){
-//~ rowalteration=rowalteration*-1;
-//~ colalteration=colalteration*-1;
-//~ }
-if(tmpchkboard.length>row+rowalteration && row+rowalteration >= 0){
-if(tmpchkboard[0].length>col+colalteration && col+colalteration >= 0){
+	if(val){
+	Board[(row-(rowalteration*lastRotLevel)+(rowalteration*newRotLevel))][(col-(colalteration*lastRotLevel)+(colalteration*newRotLevel))]=val;
+	//~ console.log("xi["+xi+"] newRotLevel["+newRotLevel+"]  lastRotLevel["+lastRotLevel+"] rowalteration["+rowalteration+"] colalteration["+colalteration+"]");
+	pieceInPlayPOS[x][0]=row-(rowalteration*lastRotLevel)+(rowalteration*newRotLevel);
+	pieceInPlayPOS[x][1]=col-(colalteration*lastRotLevel)+(colalteration*newRotLevel);
+	pieceInPlayPOS[x][2]=val;
+	}
 
-if(val){
-//pieceInPlayPOS[x][0]=row+rowalteration;
-//pieceInPlayPOS[x][1]=col+colalteration;
-Board[(row-(rowalteration*lastRotLevel)+(rowalteration*newRotLevel))][(col-(colalteration*lastRotLevel)+(colalteration*newRotLevel))]=val;
-//~ Board[(row)][(col+colalteration)]=val;
-//~ Board[(row)][(col+colalteration)]=val;
-//~ Board[(row+rowalteration)][(col)]=val;
-
-//~ console.log("xi["+xi+"] val["+val+"] row: ["+row+"] rowalteration["+rowalteration+"] col: ["+col+"] colalteration["+colalteration+"]");
-console.log("xi["+xi+"] newRotLevel["+newRotLevel+"]  lastRotLevel["+lastRotLevel+"] rowalteration["+rowalteration+"] colalteration["+colalteration+"]");
+	}}
 
 
-//~ console.log('x: '+x);
-//~ console.log('xi: '+xi);
-//~ console.log('RotationAlterations[xi]: '+RotationAlterations[xi]);
-pieceInPlayPOS[x][0]=row-(rowalteration*lastRotLevel)+(rowalteration*newRotLevel);
-//~ pieceInPlayPOS[x][0]=row;
-//~ pieceInPlayPOS[x][1]=col;
-pieceInPlayPOS[x][1]=col-(colalteration*lastRotLevel)+(colalteration*newRotLevel);
-pieceInPlayPOS[x][2]=val;
-//~ tmpchkpieceInPlayPOS[(x+RotationAlterations[xi])][0]=row+rowalteration;
-//~ tmpchkpieceInPlayPOS[(x+RotationAlterations[xi])][1]=col+colalteration;
-//~ tmpchkpieceInPlayPOS[(x+RotationAlterations[xi])][2]=val;
-
-
-
-//~ console.log("xi["+xi+"] ["+row+","+col+"] - to - ["+pieceInPlayPOS[x][0]+","+pieceInPlayPOS[x][1]+"]");
-}
-
-}}
-
-
-}
-xi++;
-}
-//pieceInPlayPOS=new Array();
-//~ Board=JSON.parse(JSON.stringify(tmpchkboard));
-
-//~ pieceInPlayPOS=JSON.parse(JSON.stringify(tmpchkpieceInPlayPOS));
-
-console.log('Rot: '+pieceInPlayROT);
+	}
+	xi++;
+	}
+	
+//console.log('Rot: '+pieceInPlayROT);
 inRotate=false;
 displayTetrisBoard();
 }
