@@ -1,4 +1,11 @@
 <script>
+//
+//
+//Author: Evan Garcia
+//
+//
+
+
 
 //~ var Shapes=new Array(
 //~ new Array(
